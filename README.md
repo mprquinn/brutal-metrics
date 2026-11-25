@@ -36,6 +36,10 @@ use (Codex), and how full its context window is. No financial cost is shown.
   the last messages that node took part in. Only real sends are drawn: if the
   feed is missing, failed or stale the tab says so (with RETRY) instead of
   simulating traffic.
+- **Spaces and agents lists in the same screen**: the sidebar's spaces and agents lists use the
+  summary box's Game Boy look: a gray-green screen in a light bezel, mono caps in near-black ink,
+  square marks for each state, the active space and focused agent inverted, and the screen turning
+  rust when something needs you.
 - **Files panel**: a lazy file tree of the focused pane's folder, with git
   status marks and a read-only preview.
 - **Files**, **Metrics** and **Flow** buttons in the tab bar open the side panel. Each
@@ -52,7 +56,7 @@ Read ~/.config/herdr-app/AGENTS.md, then add this layout: https://github.com/col
 To install it by hand:
 
 1. Copy `layouts/brutal-metrics.json` to `~/.config/herdr-app/layouts/`.
-2. Copy the five folders in `mods/` (`agent-metrics`, `agents-metrics`, `tabs-metrics`, `files-metrics`, `agent-flow`) to `~/.config/herdr-app/mods/`.
+2. Copy the six folders in `mods/` (`agent-metrics`, `agents-metrics`, `spaces-gb`, `tabs-metrics`, `files-metrics`, `agent-flow`) to `~/.config/herdr-app/mods/`.
 3. Switch to the layout with `ctrl-shift-l`, or run
    `herdr-app do layout.switch '{"name":"brutal-metrics"}'`.
 

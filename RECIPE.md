@@ -10,7 +10,7 @@ This is a Herdr layout plus four mods. The [README](README.md) covers installing
 
 This folder is the **complete layout**, not an update payload. Keep the user's original layout intact and install this one separately, under a new name if `brutal-metrics` already exists. If it is already installed, update its mods rather than adding another copy.
 
-For an update requested by an agent, back up and replace only the five folders in `mods/` (`agent-metrics`, `agents-metrics`, `tabs-metrics`, `files-metrics`, `agent-flow`). Preserve all other layouts, settings, keys, unrelated mods and the selected layout. If a new version needs a layout change, merge only its nodes into the existing tree; a mod update does not replace or switch layouts. `~/.cache/herdr-metrics.json` is the collector's cache: keep it (a cache with an older version is re-read by itself).
+For an update requested by an agent, back up and replace only the six folders in `mods/` (`agent-metrics`, `agents-metrics`, `spaces-gb`, `tabs-metrics`, `files-metrics`, `agent-flow`). Preserve all other layouts, settings, keys, unrelated mods and the selected layout. If a new version needs a layout change, merge only its nodes into the existing tree; a mod update does not replace or switch layouts. `~/.cache/herdr-metrics.json` is the collector's cache: keep it (a cache with an older version is re-read by itself).
 
 Requirements: Python 3 (the collector) and Claude Code or Codex CLI (other agents show `NO DATA`). On Windows the collector runs in WSL; the distro is `DISTRO = "Ubuntu"` at the top of `mods/agent-metrics/main.js`, so edit that if yours is named otherwise.
 
@@ -18,8 +18,10 @@ Requirements: Python 3 (the collector) and Claude Code or Codex CLI (other agent
 
 Everything is Herdr's `main` layout except four places:
 
-- **Sidebar**, 268px (`chrome` background, not resizable, 44 to 480): the shipped `workspace-chrome` header (46px, window drag area), the shipped `spaces` list and the clone `agents-metrics` split 1:1 (90px minimum each), and the `workspace-chrome` footer (`props.footer: true`, 69px).
+- **Sidebar**, 268px (`chrome` background, not resizable, 44 to 480): the shipped `workspace-chrome` header (46px, window drag area), the clone `spaces-gb` and the clone `agents-metrics` split 1:1 (90px minimum each), and the `workspace-chrome` footer (`props.footer: true`, 69px).
   - **Agents list**: each agent's program icon is the pixel-art avatar (2px cells, 16x18) and a working agent's spinner is a small pulsing square; working rows get the rainbow border.
+  - **Spaces list look**: the same screen as the agents list (below), with the same frame, palette and rust state (any space `blocked`). Title strip: `SPACES`, `N OPEN`, a blinking `N NEEDS YOU` chip and the new-space `+` as a 22x18 box with a 2px ink border. Rows: names 11.5px black caps, the space's own color kept as an 18px square block in a 2px ink frame, the git tail in 10px caps `#2c3431` with ahead/behind arrows in ink; the active space inverted; hover tints with ink at 15%; the drag drop line is 2px ink. Machine headers: 9.5px black caps in ink, a 2px ink rule above every machine after this computer, connected shown as a solid 6px ink square (hollow when away), `+`, CONNECT and COPY as 1-2px ink boxes, the login note and the logout warning blinking. Rail: active number inverted, a blocked space's mark blinking. Everything else (git look-ups, worktrees under their checkout, machines, drag to reorder, right-click menu) is Herdr's.
+  - **Agents list look**: the Metrics summary box's Game Boy screen. The list sits in a box 8px in from the block's edges (4px on the rail): 3px bezel `#95a7a7` (2px on the rail) around a `#7a8076` screen with `#0a1312` ink, JetBrains Mono caps, square corners. While any agent is blocked the screen is rust `#95553a` and the bezel `#b09270`, as in the summary box. A title strip (30px, 2px ink rule under it) reads `AGENTS`, the headline (`N WORKING` / `ALL IDLE` / `NO AGENTS`), a blinking solid `N NEEDS YOU` chip, and the sort button as a 22x18 box with a 2px ink border (like the play button; the sort menu is drawn on the same screen). Group headers are 9.5px black caps with the count in a 1px box; groups are split by a 2px ink rule. Rows: names 11.5px black caps (idle ones in `#2c3431`), times in caps; the focused row is inverted (ink block, screen-colored text). Status marks are ink, told apart by shape: working a pulsing 8px block, idle a hollow 2px square, done a solid square, blocked a blinking `NEEDS YOU` stamp (`!` in compact rows). Sub-agent tree lines are 2px ink. Hover tints a row with ink at 15%. Working rows keep the rainbow border, square-cornered.
   - One row per agent: a sub-agent is shown only nested under its parent, never also as a top-level row. Inside each group (Pinned, a space, a priority section) agents with sub-agents come first and the loose ones below.
   - A 1px divider in the theme's `input` color (the same as the sub-agent tree lines; `border` is too dark to see), with 8px side margin, separates consecutive groups.
 - **Tab bar**, 42px, the clone `tabs-metrics`, a window drag area: the active space's tabs (program icon plus spinner or dot), a `+` menu (the shipped `new-menu` popup), then exactly three panel buttons, **Files**, **Metrics** and **Flow** (no Changes), and min/max/close buttons when the window draws its own. The Metrics button shows a 7px `blocked`-colored dot, blinking, while any agent in the selected space is blocked.
@@ -101,7 +103,7 @@ Status of a card (agent or sub-agent): `blocked` if Herdr reports blocked; `wait
 
 ## Built from
 
-- `layouts/brutal-metrics.json`: `layout.clone` of `main` (Herdr 0.1.12, `cloned_from` recorded). Nodes: `sidebar` (`brand`, `sidebar-lists` (`spaces`, `agents`), `sidebar-footer`) and `work` (`tabs`, `work-body` (`main` (tab: active), `panel` → `panel-body` stack (`files`, `metrics`)), `status`). Changes from `main`: the `agents` block uses `agents-metrics`, the `tabs` block uses `tabs-metrics`, `panel-body`'s children are `files` (`files-metrics`), `metrics` (`agent-metrics`) and `flow` (`agent-flow`) instead of `files` and `changes`; `panel` stays `hidden: true`, `active: "files"`.
+- `layouts/brutal-metrics.json`: `layout.clone` of `main` (Herdr 0.1.12, `cloned_from` recorded). Nodes: `sidebar` (`brand`, `sidebar-lists` (`spaces`, `agents`), `sidebar-footer`) and `work` (`tabs`, `work-body` (`main` (tab: active), `panel` → `panel-body` stack (`files`, `metrics`)), `status`). Changes from `main`: the `spaces` block uses `spaces-gb`, the `agents` block uses `agents-metrics`, the `tabs` block uses `tabs-metrics`, `panel-body`'s children are `files` (`files-metrics`), `metrics` (`agent-metrics`) and `flow` (`agent-flow`) instead of `files` and `changes`; `panel` stays `hidden: true`, `active: "files"`.
 - `mods/agent-metrics/` (`mod.json` `{ "place": "none" }`):
   - `main.js`: the Metrics tab. Imports `spaces, agents, terminals, panes, exec, hc, appHome, home, window, theme` from `herdr`; `v_flex`, `h_flex` from `gpui-base`; `loop("opacity", ...)` for blinks; `cx.timer.every(5000)` for the collector and `cx.timer.every(200)` for avatar ticks (only while something is active). Also imports `shared, setShared`: `publishFlow()` writes the Flow feed `flow.events` after each collector run.
   - `collect.py`: the collector (see above).
@@ -114,10 +116,11 @@ Status of a card (agent or sub-agent): `blocked` if Herdr reports blocked; `wait
   - `active.js`: the active-agent marker, options A and B (see How it behaves).
   - `avatar.js`: copy of `agent-metrics/avatar.js`.
   - `flow.svg`: the Flow button icon (a box over two boxes on a trunk).
-- `mods/agents-metrics/`: `mod.clone` of `agents`; `avatar(...)` replaces the program icon in agent and sub-agent rows, a pulsing square replaces the working spinner, and a 200ms timer redraws only while an agent is active. `render()` drops from the top-level list every agent that `tree()` already nests under a parent (the `nested` set), sorts each of Pinned/rest with agents that have sub-agents first, inserts a `div().h(1)` divider before every group but the first, and still passes `setAgentOrder` the nested agents right after their parent.
+- `mods/agents-metrics/`: `mod.clone` of `agents`; `avatar(...)` replaces the program icon in agent and sub-agent rows, a pulsing square replaces the working spinner, and a 200ms timer redraws only while an agent is active. `render()` drops from the top-level list every agent that `tree()` already nests under a parent (the `nested` set), sorts each of Pinned/rest with agents that have sub-agents first, inserts a `div().h(2)` ink rule before every group but the first, and still passes `setAgentOrder` the nested agents right after their parent.
+- `mods/spaces-gb/`: `mod.clone` of `spaces` (Herdr 0.1.18); only its drawing changed (the LCD palette `LCD`, `lcd()`, `invert()` at the top, `this.p` set in `render()`), none of its behavior.
 - `mods/tabs-metrics/`: `mod.clone` of `tabs`; panel buttons are `files`, `metrics` and `flow` (icon `mods/agent-flow/flow.svg`), with the blinking blocked dot on Metrics; window-button svgs point to `mods/tabs-metrics/`.
 - `mods/files-metrics/`: `mod.clone` of `files` (its own svgs); `location()` takes the root from the terminal's launch command via `hc(["get", t, "--json"])`.
-- Shipped mods used: `workspace-chrome`, `spaces`, `pane`, `new-menu`, `workspace-status`.
+- Shipped mods used: `workspace-chrome`, `menu` (the spaces right-click menu), `pane`, `new-menu`, `workspace-status`.
 - Herdr functions: `spaces`, `agents`, `terminals`, `panes`, `exec`, `hc`, `appHome`, `home`, `window`, `theme`, `shared` / `setShared`. Commands: `agent.focus`, `layout.select`, `layout.show`, `layout.hide`.
 - Programs:
   - `python3` (through `wsl.exe` on Windows) for `collect.py`, which reads only Claude Code's files;
@@ -135,7 +138,7 @@ Status of a card (agent or sub-agent): `blocked` if Herdr reports blocked; `wait
 - `on_size_change` reports window px; a mod that positions by px must divide by `settings().zoom`, or it overflows the panel at zoom above 1.
 - `scripts/sync-to-herdr.sh` copies `agent-flow` too (it is in `MODS`).
 - The Windows collector needs the distro named in `DISTRO`; with the wrong name the token cell shows `ERR`.
-- If a `agent-metrics`, `agents-metrics`, `tabs-metrics`, `files-metrics` or `agent-flow` mod is already installed, rename these and the `mod` names in the layout.
+- If a `agent-metrics`, `agents-metrics`, `spaces-gb`, `tabs-metrics`, `files-metrics` or `agent-flow` mod is already installed, rename these and the `mod` names in the layout.
 - Herdr does not update layout or mod clones. On a new Herdr version, preserve the user's clone and merge only necessary compatibility changes; rebuilding from the new `main`, `agents`, `tabs` and `files` is an explicit choice, not part of an update.
 - QuickJS rejects `??` mixed with `||` or `&&` without parentheses. `herdr-app check` catches it; `node --check` does not.
 - `cx.notify()` throws during `render`; start work from a timer or handler, not from `render`.
@@ -143,7 +146,7 @@ Status of a card (agent or sub-agent): `blocked` if Herdr reports blocked; `wait
 
 ## Done when
 
-- `herdr-app check ~/.config/herdr-app/mods/agent-metrics` (and the other four mods, `agent-flow` included) passes.
+- `herdr-app check ~/.config/herdr-app/mods/agent-metrics` (and the other five mods, `spaces-gb` and `agent-flow` included) passes.
 - `layout.switch {name: "brutal-metrics"}` shows the layout with no `brutal-metrics.error`.
 - The tab bar shows Files, Metrics and Flow. Each button shows the panel, a second click hides it, and each space remembers which one was open.
 - With a Claude Code agent running, the Metrics tab shows tokens, AGENTS and CACHE above one card per agent with a context bar, and the token count is not `ERR`.
