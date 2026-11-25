@@ -36,6 +36,9 @@ use (Codex), and how full its context window is. No financial cost is shown.
   the last messages that node took part in. Only real sends are drawn: if the
   feed is missing, failed or stale the tab says so (with RETRY) instead of
   simulating traffic.
+- **Agents list in the same screen**: the sidebar's agents list uses the summary box's Game Boy
+  look: a gray-green screen in a light bezel, mono caps in near-black ink, square marks for each
+  state, the focused agent inverted, and the whole screen turning rust when an agent needs you.
 - **Files panel**: a lazy file tree of the focused pane's folder, with git
   status marks and a read-only preview.
 - **Files**, **Metrics** and **Flow** buttons in the tab bar open the side panel. Each
