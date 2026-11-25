@@ -2,6 +2,9 @@
 // grouped by machine when more than one is known. After a space's name, the repo
 // its first terminal is in now, only where unusual: branch, ahead/behind. Agent state lives in the agents list, not here. Click to
 // switch, right-click for its menu, drag to reorder.
+// Brutal Metrics: drawn on the Metrics summary box's Game Boy screen (agent-metrics hero()), like the agents
+// list below it: a gray-green LCD with near-black ink in a light bezel, rust while a space needs you. Square
+// blocks, 2px rules, JetBrains Mono caps; the active space is inverted like the selected tab.
 
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, ScrollHandle } from "gpui-base";
@@ -17,6 +20,12 @@ function find(node, id) {
 }
 
 // The sidebar's rail goes by its width, not a flag: dragging its edge narrows it too.
+const MONO = "JetBrains Mono";
+const LCD = { bg: "#7a8076", ink: "#0a1312", edge: "#95a7a7", hotBg: "#95553a", hotEdge: "#b09270", mute: "#2c3431" };
+const lcd = (hot) => ({ bg: hot ? LCD.hotBg : LCD.bg, fg: LCD.ink, edge: hot ? LCD.hotEdge : LCD.edge, mute: LCD.mute });
+// The same screen with ink and paper swapped: the active space.
+const invert = (p) => ({ ...p, bg: p.fg, fg: p.bg, mute: p.bg });
+
 const narrow = () => (find(layout(), "sidebar")?.size?.px ?? Infinity) < 160;
 
 // Where a space is now: its first terminal's live folder, else where it was made.
@@ -364,7 +373,9 @@ export default class Spaces extends View {
       return layout === "loading" || (!layout && this.machines.some(k => k.name === m && k.state === "connected"))
         || spaces().some(s => (s.machine ?? null) === m && !this.shown.has(s.id));
     };
-    const loadingRow = m => h_flex().id(`machine-loading-${m ?? "local"}`).h(28).flex_none().px(collapsed ? 0 : 8).items_center().when(collapsed, el => el.justify_center()).text_size(12).text_color(t.dim).child(collapsed ? "…" : "Loading…");
+    const p = this.p;
+    const loadingRow = m => h_flex().id(`machine-loading-${m ?? "local"}`).h(28).flex_none().px(collapsed ? 0 : 6).items_center().when(collapsed, el => el.justify_center())
+      .text_size(10.5).font_bold().text_color(p.fg).loop("opacity", { from: 0.35, to: 1, period: 1200 }).child(collapsed ? "…" : "LOADING…");
     if (!remote.length) {
       if (loading(null) && !rows.length) return [loadingRow(null)];
       this.activeAt = rows.findIndex(r => r.w.active);
@@ -379,11 +390,16 @@ export default class Spaces extends View {
       const rebuilt = this.rebuilt(machine) || !!repair;
       const login = machine?.state === "needs_login" ? `hc machine login ${m}` : null;
       const folded = this.folded.has(m);
-      const icon = svg(`mods/workspace-chrome/${m ? "server" : "monitor"}.svg`).size(13).flex_none();
-      const badge = div().absolute().right(-3).bottom(-2).size(6).rounded(3).border_1().border_color(t.chrome).bg(connected ? t.ansi2 : t.dim);
-      const head = h_flex().id(`machine-${m ?? "local"}`).h(26).flex_none().px(collapsed ? 0 : 8).gap(7).items_center().text_size(11).text_color(t.dim)
-        .when(collapsed, el => el.mt(4).w(RAIL_CELL).justify_center().rounded(6).tooltip(login ? `${m} needs a login: run ${login}. Click for Copy.` : m ? `${m} · ${connected ? "connected" : (machine?.state ?? "asleep").replace(/_/g, " ")}` : "This computer"))
-        .cursor_pointer().hover(s => s.bg(t.hover))
+      const icon = svg(`mods/workspace-chrome/${m ? "server" : "monitor"}.svg`).size(12).flex_none().text_color(p.fg);
+      // Connected: a solid ink square; away: a hollow one.
+      const dot = () => div().size(6).flex_none().border(1).border_color(p.fg).when(connected, el => el.bg(p.fg));
+      const badge = div().absolute().right(-3).bottom(-2).size(6).border(1).border_color(p.fg).bg(connected ? p.fg : p.bg);
+      // Machines after the first are split from the one above by a 2px ink rule, like the Metrics box's rows.
+      const head = h_flex().id(`machine-${m ?? "local"}`).h(26).flex_none().px(collapsed ? 0 : 6).gap(7).items_center()
+        .text_size(9.5).font_black().text_color(p.fg)
+        .when(m !== null, el => el.mt(4).border_t(2).border_color(p.fg))
+        .when(collapsed, el => el.mt(4).w(RAIL_CELL).justify_center().tooltip(login ? `${m} needs a login: run ${login}. Click for Copy.` : m ? `${m} · ${connected ? "connected" : (machine?.state ?? "asleep").replace(/_/g, " ")}` : "This computer"))
+        .cursor_pointer().hover(s => s.bg(p.fg + "26"))
         .on_click((_e, cx) => {
           if (collapsed && login) { run("app.settings", { section: "machines" }); return; }
           folded ? this.folded.delete(m) : this.folded.add(m);
@@ -391,40 +407,40 @@ export default class Spaces extends View {
           cx.notify();
         })
         .when(machine?.keeps_running_after_logout === false, el => el.child(div().id(`machine-logout-${m}`)
-          .flex_none().text_color(t.blocked).tooltip("Agents stop when you disconnect. Click for the fix.")
+          .flex_none().text_color(p.fg).loop("opacity", { from: 0.35, to: 1, period: 650 }).tooltip("Agents stop when you disconnect. Click for the fix.")
           .on_click((_e, cx) => { cx.stop_propagation(); openOverlay({ mod: "machine-add", kind: "dialog", width: 560 }); }).child("⚠")))
         .when(!collapsed, el => el.child(icon))
         .when(collapsed, el => el.child(div().relative().flex_none().child(icon).when(Boolean(m), el => el.child(badge))))
-        .when(!collapsed, el => el.child(div().flex_1().truncate().child(m ?? "This computer"))
-          .when(!connected && !rebuilt && !login, el => el.child(div().flex_none().child((machine?.state ?? "asleep").replace(/_/g, " "))))
+        .when(!collapsed, el => el.child(div().flex_1().truncate().child(String(m ?? "This computer").toUpperCase()))
+          .when(!connected && !rebuilt && !login, el => el.child(div().flex_none().text_color(p.mute).child((machine?.state ?? "asleep").replace(/_/g, " ").toUpperCase())))
           .when(rebuilt, el => el.child(h_flex().flex_none().gap(3).items_center()
-            .child(div().max_w(140).truncate().child(repair?.error || "rebuilt ·"))
-            .child(div().id(`machine-connect-${m}`).text_color(repair?.error ? t.blocked : t.muted)
-              .hover(s => s.text_color(t.foreground))
+            .child(div().max_w(140).truncate().text_color(p.mute).child(String(repair?.error || "rebuilt ·").toUpperCase()))
+            .child(div().id(`machine-connect-${m}`).px(4).border(1).border_color(p.fg).text_color(p.fg)
+              .hover(s => s.bg(p.fg).text_color(p.bg))
               .tooltip(repair?.error || "This machine was rebuilt or replaced. Click to connect to the new one.")
               .on_click((_e, cx) => { cx.stop_propagation(); this.reconnect(machine, cx); })
-              .child(repair?.busy ? "Connecting…" : "Connect"))))
-          .when(connected, el => el.child(div().id(`machine-add-${m ?? "local"}`).flex_none().px(4).rounded(4).hover(s => s.bg(t.hover).text_color(t.foreground))
+              .child(repair?.busy ? "CONNECTING…" : "CONNECT"))))
+          .when(connected, el => el.child(div().id(`machine-add-${m ?? "local"}`).flex_none().px(4).border(1).border_color(p.fg).hover(s => s.bg(p.fg).text_color(p.bg))
             .on_click((_e, cx) => { cx.stop_propagation(); run("space.new", { machine: m ?? "" }); }).child("+")))
-          .child(div().size(6).rounded(3).flex_none().bg(connected ? t.ansi2 : t.dim))
-          .child(svg(`mods/workspace-chrome/chevron-${folded ? "right" : "down"}.svg`).size(11).flex_none()));
-      const empty = h_flex().id(`machine-new-${m ?? "local"}`).h(28).flex_none().px(collapsed ? 0 : 8).gap(7).items_center().rounded(7)
-        .text_size(12).text_color(t.dim).hover(s => s.bg(t.hover).text_color(t.foreground))
+          .child(dot())
+          .child(svg(`mods/workspace-chrome/chevron-${folded ? "right" : "down"}.svg`).size(11).flex_none().text_color(p.fg)));
+      const empty = h_flex().id(`machine-new-${m ?? "local"}`).h(28).flex_none().px(collapsed ? 0 : 6).gap(7).items_center()
+        .text_size(10.5).font_bold().text_color(p.mute).hover(s => s.bg(p.fg + "26").text_color(p.fg))
         .on_click(() => run("space.new", { machine: m ?? "" }))
-        .when(collapsed, el => el.w(RAIL_CELL).rounded(6).justify_center().tooltip(`New space on ${m ?? "this computer"}`)
-          .child(h_flex().size(18).rounded(5).border_1().border_color(t.dim).items_center().justify_center()
-            .child(svg("mods/workspace-chrome/plus.svg").size(10))))
-        .when(!collapsed, el => el.child(svg("mods/workspace-chrome/plus.svg").size(12)).child("New space there"));
+        .when(collapsed, el => el.w(RAIL_CELL).justify_center().tooltip(`New space on ${m ?? "this computer"}`)
+          .child(h_flex().size(18).border(2).border_color(p.fg).items_center().justify_center()
+            .child(svg("mods/workspace-chrome/plus.svg").size(10).text_color(p.fg))))
+        .when(!collapsed, el => el.child(svg("mods/workspace-chrome/plus.svg").size(12).text_color(p.fg)).child("NEW SPACE THERE"));
       if (!collapsed && rebuilt) { before += 1; return [head]; }
       const cell = collapsed ? railCell : (el) => el;
-      const guidance = !collapsed && login ? [v_flex().px(8).pb(6).gap(3).flex_none()
-        .child(div().text_size(11).text_color(t.blocked).child("needs a login: run"))
+      const guidance = !collapsed && login ? [v_flex().px(6).pb(6).gap(3).flex_none()
+        .child(div().text_size(9.5).font_black().text_color(p.fg).loop("opacity", { from: 0.35, to: 1, period: 1500 }).child("NEEDS A LOGIN: RUN"))
         .child(h_flex().gap(5).items_center()
-          .child(div().flex_1().min_w(0).truncate().tooltip(login).text_size(11).text_color(t.muted).child(login))
-          .child(div().id(`machine-login-copy-${m}`).flex_none().px(5).py(2).rounded(4)
-            .text_size(11).text_color(t.foreground).bg(t.raised).cursor_pointer().hover(s => s.bg(t.hover))
+          .child(div().flex_1().min_w(0).truncate().tooltip(login).text_size(10.5).font_bold().text_color(p.fg).child(login))
+          .child(div().id(`machine-login-copy-${m}`).flex_none().px(5).h(18).flex().items_center().border(2).border_color(p.fg)
+            .text_size(10).font_black().text_color(p.fg).cursor_pointer().hover(s => s.bg(p.fg).text_color(p.bg))
             .on_click((_e, cx) => { cx.stop_propagation(); cx.write_to_clipboard(login); this.copiedLogin = login; cx.notify(); })
-            .child(this.copiedLogin === login ? "Copied" : "Copy")))] : [];
+            .child(this.copiedLogin === login ? "COPIED" : "COPY")))] : [];
       const items = [cell(head), ...guidance, ...(folded ? [] : mine.length ? mine.map(draw) : [loading(m) ? loadingRow(m) : cell(empty)])];
       const first = folded ? -1 : mine.findIndex(r => r.w.active);
       if (first >= 0) this.activeAt = before + 1 + guidance.length + first;
@@ -437,7 +453,7 @@ export default class Spaces extends View {
   // branch goes when the name already says it (a worktree is named after its branch),
   // and master/main go: nearly every space is on one. When the row is full, it
   // and the name both start from their text's width and give way in proportion.
-  gitTail(g, tree, name, t) {
+  gitTail(g, tree, name, t, q = this.p) {
     const raw = g.branch ?? "detached";
     const fullName = name.toLowerCase();
     const emoji = EMOJI.exec(name)?.[0];
@@ -455,11 +471,13 @@ export default class Spaces extends View {
       .gap(5)
       .justify_end()
       .items_center()
-      .text_size(11.5)
-      .text_color(t.dim)
-      .when(Boolean(where), (el) => el.child(div().min_w(0).truncate().child(where)))
-      .when(g.ahead > 0, (el) => el.child(div().flex_none().text_color(t.ansi2).child(`\u2191${g.ahead}`)))
-      .when(g.behind > 0, (el) => el.child(div().flex_none().text_color(t.ansi1).child(`\u2193${g.behind}`)));
+      .text_size(10)
+      .font_bold()
+      .text_color(q.mute)
+      .when(Boolean(where), (el) => el.child(div().min_w(0).truncate().child(where.toUpperCase())))
+      // Ahead and behind in ink: the arrows tell them apart on a one-color screen.
+      .when(g.ahead > 0, (el) => el.child(div().flex_none().font_black().text_color(q.fg).child(`\u2191${g.ahead}`)))
+      .when(g.behind > 0, (el) => el.child(div().flex_none().font_black().text_color(q.fg).child(`\u2193${g.behind}`)));
   }
 
   row({ w, i, g, tree }, t) {
@@ -468,19 +486,19 @@ export default class Spaces extends View {
     const colors = shared("space.colors") ?? {};
     const color = colors[w.id] ?? "ansi6";
     const fill = color.startsWith("#") ? color : (MARK[color] ?? t[color]);
+    const q = on ? invert(this.p) : this.p;
     return v_flex()
       .relative()
       .id(`space-${w.id}`)
-      .px(8)
+      .px(6)
       .h(rowHeight({ tree }))
       .flex_none()
       .justify_center()
-      .rounded(8)
-      .when(on, (el) => el.bg(t.selected))
-      .when(!on, (el) => el.hover((s) => s.bg(t.hover)))
+      .when(on, (el) => el.bg(q.bg))
+      .when(!on, (el) => el.hover((s) => s.bg(q.fg + "26")))
       .when(this.pressed === w.id && this.over !== w.id, (el) => el.opacity(0.5))
       .when(this.pressed !== null && this.over === w.id && this.pressed !== w.id, (el) => el.child(
-        div().absolute().left(0).right(0).h(2).bg(t.accent)
+        div().absolute().left(0).right(0).h(2).bg(this.p.fg)
           .when(fromIndex < i, line => line.bottom(0))
           .when(fromIndex > i, line => line.top(0)),
       ))
@@ -512,10 +530,11 @@ export default class Spaces extends View {
         h_flex()
           .gap(9)
           .items_center()
-          .when(Boolean(tree), el => el.pl(22).child(svg("mods/workspace-chrome/branch.svg").size(13).flex_none().text_color(t.dim)))
-          .when(!tree, el => el.child(h_flex().size(18).flex_none().rounded(5).bg(fill).items_center().justify_center().text_size(10.5).font_bold().text_color("#ffffff").child(spaceAvatar(w.name))))
-          .child(div().flex_initial().min_w(SIDE_MIN).truncate().text_color(t.foreground).child(w.name))
-          .child(g ? this.gitTail(g, tree, w.name, t) : div().flex_1()),
+          .when(Boolean(tree), el => el.pl(22).child(svg("mods/workspace-chrome/branch.svg").size(13).flex_none().text_color(q.fg)))
+          // The space's color stays (other mods share it), as a square block in a 2px ink frame.
+          .when(!tree, el => el.child(h_flex().size(18).flex_none().bg(fill).border(2).border_color(q.fg).items_center().justify_center().text_size(10).font_black().text_color(LCD.ink).child(spaceAvatar(w.name))))
+          .child(div().flex_initial().min_w(SIDE_MIN).truncate().text_size(11.5).font_black().text_color(q.fg).child(w.name.toUpperCase()))
+          .child(g ? this.gitTail(g, tree, w.name, t, q) : div().flex_1()),
       );
   }
 
@@ -525,14 +544,16 @@ export default class Spaces extends View {
       .relative()
       .w(RAIL_CELL)
       .h(26)
-      .rounded(6)
       .justify_center()
       .items_center()
-      .when(w.active, (el) => el.bg(t.selected))
-      .when(!w.active, (el) => el.hover((s) => s.bg(t.hover)))
+      .text_size(10.5)
+      .font_black()
+      .when(w.active, (el) => el.bg(this.p.fg))
+      .when(!w.active, (el) => el.hover((s) => s.bg(this.p.fg + "26")))
       .on_click(() => run("space.select", { id: w.id }))
-      .child(div().text_color(w.active ? t.foreground : t.muted).child(String(i + 1)))
-      .child(div().absolute().right(5).text_color(tone(t, w.status)).child(glyph(w.status))));
+      .child(div().text_color(w.active ? this.p.bg : this.p.fg).child(String(i + 1)))
+      .child(div().absolute().right(3).text_color(w.active ? this.p.bg : this.p.fg)
+        .when(w.status === "blocked", (el) => el.loop("opacity", { from: 0.2, to: 1, period: 650 })).child(glyph(w.status))));
   }
 
   render() {
@@ -550,6 +571,9 @@ export default class Spaces extends View {
       changed = true;
     }
     if (changed) setShared("space.colors", kept);
+    // The screen turns rust while any space needs you, as the Metrics box and the agents list do.
+    const needs = sp.filter(s => s.status === "blocked").length;
+    const p = (this.p = lcd(needs > 0));
     const list = this.grouped(t, collapsed);
     // Bring the active space into view when it, or its place in the list, changes; a row already in view stays put.
     const active = sp.find(p => p.active)?.id;
@@ -558,16 +582,24 @@ export default class Spaces extends View {
       this.revealedAt = this.activeAt;
       if (this.activeAt >= 0) this.scroll.scroll_to_item(this.activeAt);
     }
-    return v_flex().size_full().min_h(0).bg(t.chrome).text_size(13)
-      .child(h_flex().h(31).pl(16).pr(10).items_center().justify_between().text_size(11.5).text_color(t.dim)
-        .when(collapsed, el => el.pl(0).pr(0).justify_center())
-        .when(!collapsed, el => el.child("Spaces"))
-        .child(div().id("space-new").size(26).flex_none().flex().items_center().justify_center().rounded(6).hover(s => s.bg(t.hover).text_color(t.foreground))
-          .on_click(() => run("space.new")).child(svg("mods/workspace-chrome/plus.svg").size(14))))
-      .child(v_flex().flex_1().min_h(0).px(collapsed ? 0 : 8).pb(14).overflow_y_scrollbar().mode("always").track_scroll(this.scroll)
+    return v_flex().size_full().min_h(0).bg(t.chrome).p(collapsed ? 4 : 8)
+      .child(v_flex().flex_1().min_h(0).border(collapsed ? 2 : 3).border_color(p.edge).bg(p.bg).font_family(MONO).text_size(11)
+      // Title strip: SPACES, how many, and new space as a box like the Metrics play button.
+      .child(h_flex().h(30).flex_none().px(collapsed ? 0 : 10).gap(8).items_center().border_b(2).border_color(p.fg)
+        .when(collapsed, el => el.justify_center())
+        .when(!collapsed, el => el
+          .child(div().flex_none().text_size(11).font_black().text_color(p.fg).child("SPACES"))
+          .child(div().flex_1().min_w(0).truncate().text_size(9.5).font_bold().text_color(p.fg).child(`${sp.length} OPEN`))
+          .when(needs > 0, el => el.child(div().flex_none().px(5).bg(p.fg).text_size(9.5).font_black().text_color(p.bg)
+            .loop("opacity", { from: 0.25, to: 1, period: 650 }).child(`${needs} NEEDS YOU`))))
+        .child(div().id("space-new").w(22).h(18).flex_none().flex().items_center().justify_center()
+          .border(2).border_color(p.fg).text_color(p.fg).cursor_pointer().hover(s => s.bg(p.fg).text_color(p.bg))
+          .tooltip("New space")
+          .on_click(() => run("space.new")).child(svg("mods/workspace-chrome/plus.svg").size(11))))
+      .child(v_flex().flex_1().min_h(0).px(collapsed ? 0 : 4).pt(2).pb(8).overflow_y_scrollbar().mode("always").track_scroll(this.scroll)
         // A block above (another mod's) growing, or the window resizing, shrinks this list and can push the active space out.
         .on_size_change((_size, cx) => { if (this.activeAt >= 0) { this.scroll.scroll_to_item(this.activeAt); cx.notify(); } })
         .on_mouse_up("left", (_e, cx) => { this.pressed = null; cx.notify(); })
-        .children(list));
+        .children(list)));
   }
 }
